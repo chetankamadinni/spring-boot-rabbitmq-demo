@@ -10,6 +10,8 @@ import com.example.springrabbitproducer.model.Product;
 @Service
 public class ProductService {
 
+	private static final String routing_key = "foo.bar.baz";
+
 	@Autowired
 	RabbitTemplate rabbitTemplate;
 
@@ -17,7 +19,7 @@ public class ProductService {
 	public String exchange;
 
 	public void postProduct(Product product) {
-		rabbitTemplate.convertAndSend(exchange, "foo.bar.baz", product);
+		rabbitTemplate.convertAndSend(exchange, routing_key, product);
 	}
 
 }

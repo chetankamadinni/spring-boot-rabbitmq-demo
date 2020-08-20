@@ -3,7 +3,9 @@ package com.example.springrabbitproducer.config;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -24,20 +26,46 @@ public class RabbitConfig {
 
 	@Value("${rabbitmq.exchange}")
 	public String exchange;
+	
+	@Value("${rabbitmq.dlqExchange}")
+	public String deadLetterExchange;
+	
+	@Value("${rabbitmq.dlqName}")
+	public String dlq;
 
+	@Value("${rabbitmq.dlqroutingKey}")
+	private String dlrk;
+
+	@Bean
+	Queue dlq() {
+		return new Queue(dlq, true);
+	}
+	
 	@Bean
 	Queue queue() {
-		return new Queue(queueName, false);
+		return QueueBuilder.durable(queueName).withArgument("x-dead-letter-exchange", deadLetterExchange)
+				.withArgument("x-dead-letter-routing-key", dlrk)
+				.build();
 	}
 
 	@Bean
-	TopicExchange exchange() {
-		return new TopicExchange(exchange);
+	DirectExchange exchange() {
+		return new DirectExchange(exchange);
+	}
+	
+	@Bean
+	DirectExchange deadLetterExchange() {
+		return new DirectExchange(deadLetterExchange);
 	}
 
 	@Bean
-	Binding binding(Queue queue, TopicExchange exchange) {
+	Binding binding(Queue queue, DirectExchange exchange) {
 		return BindingBuilder.bind(queue).to(exchange).with(routingKey);
+	}
+	
+	@Bean
+	Binding dlqBinding() {
+		return BindingBuilder.bind(dlq()).to(deadLetterExchange()).with(dlrk);
 	}
 	
 	@Bean
